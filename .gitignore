@@ -15,3 +15,7 @@
 # Jetbrains
 *.iml
 /.idea
+
+# VSCode
+.vscode
+.settings
