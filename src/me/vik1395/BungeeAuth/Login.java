@@ -24,135 +24,102 @@ You may obtain a copy of the License at http://creativecommons.org/licenses/by-s
 You may find an abridged version of the License at http://creativecommons.org/licenses/by-sa/4.0/
  */
 
-public class Login extends Command
-{
-	public Login() 
-	{
+public class Login extends Command {
+	public Login() {
 		super("login", "");
 	}
 
 	private static Tables ct = new Tables();
 	HashMap<String, Integer> wrongpass = new HashMap<>();
-	
+
 	@Override
-	public void execute(CommandSender s, String[] args) 
-	{
-		if(s instanceof ProxiedPlayer)
-		{
+	public void execute(CommandSender s, String[] args) {
+		if (s instanceof ProxiedPlayer) {
 			boolean pCheck = false;
-			ProxiedPlayer p = (ProxiedPlayer)s;
+			ProxiedPlayer p = (ProxiedPlayer) s;
 			String pName = p.getName();
 			String status = ct.getStatus(p.getName());
-			
-			if(args.length>0&&args[0].equals("force"))
-			{
-				if(p.hasPermission("bauth.forcelogin"))
-				{
-					if(args.length>1)
-					{
-						if(forceLogin(args[1]))
-						{
+
+			if (args.length > 0 && args[0].equals("force")) {
+				if (p.hasPermission("bauth.forcelogin")) {
+					if (args.length > 1) {
+						if (forceLogin(args[1])) {
 							p.sendMessage(new ComponentBuilder(Main.force_login).color(ChatColor.GREEN).create());
+						} else {
+							p.sendMessage(new ComponentBuilder(Main.reset_noreg.replace("%player%", args[1]))
+									.color(ChatColor.RED).create());
 						}
-						else
-						{
-							p.sendMessage(new ComponentBuilder(Main.reset_noreg.replace("%player%", args[1])).color(ChatColor.RED).create());
-						}
+					} else {
+						p.sendMessage(
+								new ComponentBuilder("Usage: /login force [player]").color(ChatColor.RED).create());
 					}
-					else
-					{
-						p.sendMessage(new ComponentBuilder("Usage: /login force [player]").color(ChatColor.RED).create());
-					}
-				}
-				else
-				{
+				} else {
 					p.sendMessage(new ComponentBuilder(Main.no_perm).color(ChatColor.RED).create());
 				}
 				return;
 			}
-			
-		    if(status.equalsIgnoreCase("online") || Main.plonline.contains(p.getName()))
-		    {
+
+			if (status.equalsIgnoreCase("online") || Main.plonline.contains(p.getName())) {
 				p.sendMessage(new ComponentBuilder(Main.already_in).color(ChatColor.GREEN).create());
 			}
-			
-			else
-			{
-				if(Main.muted.contains(pName))
-				{
+
+			else {
+				if (Main.muted.contains(pName)) {
 					p.sendMessage(new ComponentBuilder(Main.spammed_password).color(ChatColor.RED).create());
 					return;
 				}
-				
+
 				pCheck = ct.checkPlayerEntry(pName);
-				
-				if(!pCheck)
-				{
+
+				if (!pCheck) {
 					String emailCh = "";
-					if(Main.email)
-					{
+					if (Main.email) {
 						emailCh = " [email]";
 					}
-					p.sendMessage(new ComponentBuilder(Main.register.replace("%email%", emailCh)).color(ChatColor.RED).create());
+					p.sendMessage(new ComponentBuilder(Main.register.replace("%email%", emailCh)).color(ChatColor.RED)
+							.create());
 				}
-				
-				else
-				{
+
+				else {
 					boolean PwCheck = false;
 					String pwType = ct.getType(pName);
-					
+
 					boolean ch = true;
-					try
-					{
+					try {
 						@SuppressWarnings("unused")
 						String argcheck = args[0];
-						
-					}
-					catch(Exception e)
-					{
+
+					} catch (Exception e) {
 						ch = false;
 						p.sendMessage(new ComponentBuilder("Usage: /login [password]").color(ChatColor.RED).create());
 					}
-					if(ch == true)
-					{
+					if (ch == true) {
 						String currentPw = args[0];
 						PasswordHandler ph = new PasswordHandler();
 						PwCheck = ph.checkPassword(currentPw, pwType, pName);
-						
-						if(!PwCheck)
-						{
-							if(Main.pwtries>0)
-							{
-								if(Main.pwspam.containsKey(pName))
-								{
-									int tries = Main.pwspam.get(pName)+1;
-									 
-									if(tries>=Main.pwtries)
-									{
+
+						if (!PwCheck) {
+							if (Main.pwtries > 0) {
+								if (Main.pwspam.containsKey(pName)) {
+									int tries = Main.pwspam.get(pName) + 1;
+
+									if (tries >= Main.pwtries) {
 										Main.startTimeout(pName);
 										Main.muted.add(pName);
-									}
-									else
-									{
+									} else {
 										Main.pwspam.put(pName, tries);
 									}
-								}
-								else
-								{
+								} else {
 									Main.pwspam.put(pName, 1);
 								}
 							}
 							p.sendMessage(new ComponentBuilder(Main.wrong_pass).color(ChatColor.RED).create());
 						}
-						
-						else
-						{
-							if(ListenerClass.guest.contains(pName))
-							{
-								for(int i=0; i<ListenerClass.guest.size();i++)
-								{
-									if(ListenerClass.guest.get(i).equals(pName))
-									{
+
+						else {
+							if (ListenerClass.guest.contains(pName)) {
+								for (int i = 0; i < ListenerClass.guest.size(); i++) {
+									if (ListenerClass.guest.get(i).equals(pName)) {
 										ListenerClass.guest.remove(i);
 									}
 								}
@@ -168,27 +135,21 @@ public class Login extends Command
 			}
 		}
 	}
-	
-	public static boolean forceLogin(String pName)
-	{
-		if(!ct.checkPlayerEntry(pName))
-		{
+
+	public static boolean forceLogin(String pName) {
+		if (!ct.checkPlayerEntry(pName)) {
 			return false;
 		}
 		Main.plonline.add(pName);
 		ct.setStatus(pName, "online");
 		ct.setLastSeen(pName, null, null);
 		ProxiedPlayer target = Main.plugin.getProxy().getPlayer(pName);
-		if(target!=null)
-		{
+		if (target != null) {
 			ListenerClass.prelogin.get(pName).cancel();
 			ListenerClass.movePlayer(target, false);
-			if(ListenerClass.guest.contains(pName))
-			{
-				for(int i=0; i<ListenerClass.guest.size();i++)
-				{
-					if(ListenerClass.guest.get(i).equals(pName))
-					{
+			if (ListenerClass.guest.contains(pName)) {
+				for (int i = 0; i < ListenerClass.guest.size(); i++) {
+					if (ListenerClass.guest.get(i).equals(pName)) {
 						ListenerClass.guest.remove(i);
 					}
 				}

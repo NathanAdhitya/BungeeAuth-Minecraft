@@ -28,8 +28,7 @@ You may obtain a copy of the License at http://creativecommons.org/licenses/by-s
 You may find an abridged version of the License at http://creativecommons.org/licenses/by-sa/4.0/
  */
 
-public class Main extends Plugin
-{
+public class Main extends Plugin {
 	private Tables ct;
 	public static List<String> plonline, muted;
 	public static HashMap<String, Integer> pwspam;
@@ -38,29 +37,28 @@ public class Main extends Plugin
 	public static int seshlength, phpport, gseshlength, entperip, errlim, pwtimeout, pwtries;
 	public static boolean sqlite, email, phpapi, guestfailsafe, strict_authlobby;
 	public static String version, authlobby, host, port, dbName, username, pass, register,
-    reg_success, already_reg, login_success, already_in, logout_success, already_out, reset_noreg, reset_success,
-    no_perm, pass_change_success, wrong_pass, welcome_resume, welcome_login, welcome_register, pre_login,
-    error_authlobby, error_no_server, phppass, reg_limit, illegal_name, nologin_kick, allowedun, spammed_password, force_register, force_login, force_logout;
-	
-	public void onEnable()
-	{
+			reg_success, already_reg, login_success, already_in, logout_success, already_out, reset_noreg,
+			reset_success,
+			no_perm, pass_change_success, wrong_pass, welcome_resume, welcome_login, welcome_register, pre_login,
+			error_authlobby, error_no_server, phppass, reg_limit, illegal_name, nologin_kick, allowedun,
+			spammed_password, force_register, force_login, force_logout;
+
+	public void onEnable() {
 		plugin = this;
 		version = this.getDescription().getVersion();
-		
+
 		YamlGenerator yg = new YamlGenerator();
 		yg.saveDefaultConfig();
 		yg.saveDefaultMessage();
 		loadYaml();
-		
+
 		ct = new Tables();
-		
-		try 
-		{
+
+		try {
 			ct.Create();
-		}
-		catch (SQLException e) 
-		{
-			getLogger().info("Unable to create MySQL table! Please make sure login details are correct and the SQL server accepts connections!");
+		} catch (SQLException e) {
+			getLogger().info(
+					"Unable to create MySQL table! Please make sure login details are correct and the SQL server accepts connections!");
 			e.printStackTrace();
 		}
 
@@ -68,74 +66,68 @@ public class Main extends Plugin
 		muted = new ArrayList<String>();
 		pwspam = new HashMap<String, Integer>();
 		guestserverchecker = new HashMap<String, Runnable>();
-		
-        getProxy().getPluginManager().registerListener(this, new ListenerClass());
+
+		getProxy().getPluginManager().registerListener(this, new ListenerClass());
 		getProxy().getPluginManager().registerCommand(this, new Register());
 		getProxy().getPluginManager().registerCommand(this, new Login());
 		getProxy().getPluginManager().registerCommand(this, new ChangePassword());
 		getProxy().getPluginManager().registerCommand(this, new ResetPlayer());
 		getProxy().getPluginManager().registerCommand(this, new Logout());
-		
-		if(phpapi)
-		{
+
+		if (phpapi) {
 			getLogger().info("Enabling PHP API...");
-			
+
 			APISockets sockets = new APISockets();
 			sockets.enable(phpport);
 		}
-		
-		if(guestfailsafe)
-		{
+
+		if (guestfailsafe) {
 			checkGuestServer();
 		}
-		
+
 		getLogger().info("BungeeAuth has successfully started!");
-		getLogger().info("Created by Vik1395");
-		
+		getLogger().info("Created by Vik1395 forked by ITZVGcGPmO, NathanAdhitya");
+
 	}
-	
-	public void onDisable()
-	{
+
+	public void onDisable() {
 		APISockets.disable();
-		if(plonline.size()>0)
-		{
-			for(int i=0; i<plonline.size();i++)
-			{
+		if (plonline.size() > 0) {
+			for (int i = 0; i < plonline.size(); i++) {
 				ct.setLastSeen(plonline.get(i), null, "1001-01-01 01:01:01");
 			}
 		}
 	}
-	
-	private void loadYaml()
-	{
 
-	    sqlite = YamlGenerator.config.getBoolean("Use SQLite");
+	private void loadYaml() {
+
+		sqlite = YamlGenerator.config.getBoolean("Use SQLite");
 		host = YamlGenerator.config.getString("Host");
-	    port = "" + YamlGenerator.config.getInt("Port");
-	    dbName = YamlGenerator.config.getString("DBName");
-	    username = YamlGenerator.config.getString("Username");
-	    pass = YamlGenerator.config.getString("Password");
+		port = "" + YamlGenerator.config.getInt("Port");
+		dbName = YamlGenerator.config.getString("DBName");
+		username = YamlGenerator.config.getString("Username");
+		pass = YamlGenerator.config.getString("Password");
 		authlobby = YamlGenerator.config.getString("AuthLobby");
 		strict_authlobby = YamlGenerator.config.getBoolean("Strict AuthLobby");
-	    email = YamlGenerator.config.getBoolean("Ask Email");
-	    seshlength = YamlGenerator.config.getInt("Session Length");
-	    gseshlength = YamlGenerator.config.getInt("Guest Session Length");
-	    allowedun = YamlGenerator.config.getString("Legal Usernames Characters");
-	    entperip = YamlGenerator.config.getInt("Users per IP"); 
-	    phpapi = YamlGenerator.config.getBoolean("Enable PHP API");
-	    phpport = YamlGenerator.config.getInt("PHP API Port");
-	    phppass = YamlGenerator.config.getString("API Password");
-	    errlim = YamlGenerator.config.getInt("API Error Limit");
-	    pwtries = YamlGenerator.config.getInt("Password Tries");
-	    pwtimeout = YamlGenerator.config.getInt("Wrong Password Timeout");
-	    guestfailsafe = YamlGenerator.config.getBoolean("Guest Server Failsafe Check");
+		email = YamlGenerator.config.getBoolean("Ask Email");
+		seshlength = YamlGenerator.config.getInt("Session Length");
+		gseshlength = YamlGenerator.config.getInt("Guest Session Length");
+		allowedun = YamlGenerator.config.getString("Legal Usernames Characters");
+		entperip = YamlGenerator.config.getInt("Users per IP");
+		phpapi = YamlGenerator.config.getBoolean("Enable PHP API");
+		phpport = YamlGenerator.config.getInt("PHP API Port");
+		phppass = YamlGenerator.config.getString("API Password");
+		errlim = YamlGenerator.config.getInt("API Error Limit");
+		pwtries = YamlGenerator.config.getInt("Password Tries");
+		pwtimeout = YamlGenerator.config.getInt("Wrong Password Timeout");
+		guestfailsafe = YamlGenerator.config.getBoolean("Guest Server Failsafe Check");
 
 		illegal_name = YamlGenerator.message.getString("illegal_name");
 		register = YamlGenerator.message.getString("register");
 		reg_success = YamlGenerator.message.getString("reg_success");
 		already_reg = YamlGenerator.message.getString("already_reg");
-	    reg_limit = YamlGenerator.message.getString("reg_limit");
-	    nologin_kick = YamlGenerator.message.getString("nologin_kick");
+		reg_limit = YamlGenerator.message.getString("reg_limit");
+		nologin_kick = YamlGenerator.message.getString("nologin_kick");
 		login_success = YamlGenerator.message.getString("login_success");
 		already_in = YamlGenerator.message.getString("already_in");
 		logout_success = YamlGenerator.message.getString("logout_success");
@@ -149,54 +141,53 @@ public class Main extends Plugin
 		welcome_login = YamlGenerator.message.getString("welcome_login");
 		welcome_register = YamlGenerator.message.getString("welcome_register");
 		pre_login = YamlGenerator.message.getString("pre_login");
-	    error_authlobby = YamlGenerator.message.getString("error_authlobby");
+		error_authlobby = YamlGenerator.message.getString("error_authlobby");
 		error_no_server = YamlGenerator.message.getString("error_no_server");
-	    spammed_password = YamlGenerator.message.getString("spammed_password");
-	    force_register = YamlGenerator.message.getString("force_register");
-	    force_login = YamlGenerator.message.getString("force_login");
-	    force_logout = YamlGenerator.message.getString("force_logout");
+		spammed_password = YamlGenerator.message.getString("spammed_password");
+		force_register = YamlGenerator.message.getString("force_register");
+		force_login = YamlGenerator.message.getString("force_login");
+		force_logout = YamlGenerator.message.getString("force_logout");
 	}
-	
-	protected static void startTimeout(final String p)
-	{
+
+	protected static void startTimeout(final String p) {
 		Main.plugin.getProxy().getScheduler().schedule(Main.plugin, new Runnable() {
 
 			@Override
-			public void run() 
-			{
+			public void run() {
 				pwspam.remove(p);
 				muted.remove(p);
 			}
-			
+
 		}, (long) Main.pwtimeout, TimeUnit.MINUTES);
 	}
-	
-	private void checkGuestServer()
-	{
+
+	private void checkGuestServer() {
 		final ServerInfo sinfo = Main.plugin.getProxy().getServerInfo(Main.authlobby);
-		
+
 		Main.plugin.getProxy().getScheduler().schedule(Main.plugin, new Runnable() {
-			
+
 			@Override
-			public void run()
-			{
-				for(int i=0; i<ListenerClass.guest.size();i++)
-				{
+			public void run() {
+				for (int i = 0; i < ListenerClass.guest.size(); i++) {
 					ProxiedPlayer p = getProxy().getPlayer(ListenerClass.guest.get(i));
-					if(p!=null)
-					{
-						if(sinfo==null)
-						{
+					if (p != null) {
+						if (sinfo == null) {
 							p.disconnect(new TextComponent(Main.error_authlobby));
 							System.err.println("[BungeeAuth] AuthLobby not found!");
+						} else if (!p.getServer().getInfo().equals(sinfo)) {
+							/*
+							 * Check edge cases. Make sure the player is not marked as online as how /login
+							 * checks it.
+							 */
+							String status = ct.getStatus(p.getName());
+							if (status.equalsIgnoreCase("online") || Main.plonline.contains(p.getName())) {
+								// Player's already authed, remove them from the guest list.
+								ListenerClass.guest.remove(i);
+							} else {
+								p.connect(sinfo);
+							}
 						}
-						else if(!p.getServer().getInfo().equals(sinfo))
-						{
-							p.connect(sinfo);
-						}
-					}
-					else
-					{
+					} else {
 						ListenerClass.guest.remove(i);
 					}
 				}
